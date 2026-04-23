@@ -20,6 +20,7 @@ export default function Builder() {
   const [resumeId, setResumeId] = useState(null);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -63,6 +64,28 @@ export default function Builder() {
       setStatus(error.message || 'Save failed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEnhance = async () => {
+    if (!token) return;
+    setEnhancing(true);
+    setStatus('Enhancing summary and skills...');
+    try {
+      const result = await api.enhanceResume(token, {
+        summary: formData.summary,
+        skills: formData.skills
+      });
+      setFormData((prev) => ({
+        ...prev,
+        summary: result.summary,
+        skills: result.skills
+      }));
+      setStatus('AI enhancement applied.');
+    } catch (error) {
+      setStatus(error.message || 'Enhancement failed.');
+    } finally {
+      setEnhancing(false);
     }
   };
 
@@ -123,6 +146,9 @@ export default function Builder() {
           </div>
           <button className="button primary" type="button" onClick={handleSave} disabled={loading}>
             {loading ? 'Saving...' : 'Save Resume'}
+          </button>
+          <button className="button ghost" type="button" onClick={handleEnhance} disabled={enhancing}>
+            {enhancing ? 'Enhancing...' : 'Enhance with AI'}
           </button>
           {status ? <p className="auth-alt">{status}</p> : null}
         </div>

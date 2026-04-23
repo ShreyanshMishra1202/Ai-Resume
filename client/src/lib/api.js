@@ -47,5 +47,9 @@ export const api = {
   updateResume: (token, id, payload) => authRequest(`/api/resumes/${id}`, token, {
     method: 'PUT',
     body: JSON.stringify(payload)
+  }),
+  enhanceResume: (token, payload) => authRequest('/api/ai/enhance', token, {
+    method: 'POST',
+    body: JSON.stringify(payload)
   })
 };

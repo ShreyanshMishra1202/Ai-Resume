@@ -19,7 +19,17 @@ const limiter = rateLimit({
 
 app.use(helmet());
 app.use(limiter);
-app.use(cors({ origin: env.clientOrigin, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || env.clientOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 

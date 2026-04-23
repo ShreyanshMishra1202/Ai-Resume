@@ -18,6 +18,7 @@ export default function Builder() {
   const { token } = useAuth();
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [resumeId, setResumeId] = useState(null);
+  const [resumes, setResumes] = useState([]);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
@@ -31,6 +32,7 @@ export default function Builder() {
       setStatus('Loading your latest resume...');
       try {
         const resumes = await api.listResumes(token);
+        setResumes(resumes);
         if (resumes.length > 0) {
           setResumeId(resumes[0]._id);
           setFormData({ ...EMPTY_FORM, ...resumes[0] });
@@ -87,6 +89,10 @@ export default function Builder() {
         ? await api.updateResume(token, resumeId, payload)
         : await api.createResume(token, payload);
       setResumeId(result._id);
+      setResumes((prev) => {
+        const filtered = prev.filter((item) => item._id !== result._id);
+        return [result, ...filtered].slice(0, 5);
+      });
       setStatus('Saved just now.');
     } catch (error) {
       setStatus(error.message || 'Save failed.');
@@ -121,6 +127,12 @@ export default function Builder() {
     window.print();
   };
 
+  const handleSelectResume = (resume) => {
+    setResumeId(resume._id);
+    setFormData({ ...EMPTY_FORM, ...resume });
+    setStatus(`Loaded "${resume.name || 'Untitled'}"`);
+  };
+
   if (!token) {
     return (
       <section>
@@ -144,6 +156,20 @@ export default function Builder() {
       <div className="builder-grid">
         <div className="panel">
           <h3>Resume Details</h3>
+          {resumes.length > 0 ? (
+            <div className="resume-list">
+              {resumes.map((resume) => (
+                <button
+                  key={resume._id}
+                  type="button"
+                  className="resume-pill"
+                  onClick={() => handleSelectResume(resume)}
+                >
+                  {resume.name || 'Untitled Resume'}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="form-field">
             <label htmlFor="name">Full name</label>
             <input id="name" name="name" value={formData.name} onChange={handleChange} />

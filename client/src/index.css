@@ -212,6 +212,22 @@ a {
   margin-bottom: 16px;
 }
 
+.resume-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.resume-pill {
+  border: 1px solid var(--stroke);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .resume-header {
   border-bottom: 1px solid var(--stroke);
   padding-bottom: 12px;

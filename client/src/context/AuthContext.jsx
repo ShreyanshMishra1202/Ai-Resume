@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api.js';
 
 const AuthContext = createContext(null);
@@ -6,6 +6,22 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!token || user) return;
+
+    const loadUser = async () => {
+      try {
+        const result = await api.me(token);
+        setUser(result.user);
+      } catch (error) {
+        setToken(null);
+        localStorage.removeItem('token');
+      }
+    };
+
+    loadUser();
+  }, [token, user]);
 
   const login = async (payload) => {
     const result = await api.login(payload);

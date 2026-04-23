@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -21,6 +21,7 @@ export default function Builder() {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const skipAutoSave = useRef(false);
 
   useEffect(() => {
     if (!token) return;
@@ -33,6 +34,7 @@ export default function Builder() {
         if (resumes.length > 0) {
           setResumeId(resumes[0]._id);
           setFormData({ ...EMPTY_FORM, ...resumes[0] });
+          skipAutoSave.current = true;
         }
         setStatus('');
       } catch (error) {
@@ -44,6 +46,32 @@ export default function Builder() {
 
     loadLatest();
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (skipAutoSave.current) {
+      skipAutoSave.current = false;
+      return;
+    }
+
+    const hasContent = Object.values(formData).some((value) => value.trim() !== '');
+    if (!hasContent) return;
+
+    const saveTimer = setTimeout(async () => {
+      try {
+        const payload = { ...formData };
+        const result = resumeId
+          ? await api.updateResume(token, resumeId, payload)
+          : await api.createResume(token, payload);
+        setResumeId(result._id);
+        setStatus('Auto-saved just now.');
+      } catch (error) {
+        setStatus(error.message || 'Auto-save failed.');
+      }
+    }, 800);
+
+    return () => clearTimeout(saveTimer);
+  }, [formData, resumeId, token]);
 
   const handleChange = (event) => {
     setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));

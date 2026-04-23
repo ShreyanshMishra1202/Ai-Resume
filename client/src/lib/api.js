@@ -17,6 +17,16 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+function authRequest(path, token, options = {}) {
+  return request(path, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export const api = {
   register: (payload) => request('/api/auth/register', {
     method: 'POST',
@@ -28,5 +38,14 @@ export const api = {
   }),
   me: (token) => request('/api/auth/me', {
     headers: { Authorization: `Bearer ${token}` }
+  }),
+  listResumes: (token) => authRequest('/api/resumes', token),
+  createResume: (token, payload) => authRequest('/api/resumes', token, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  updateResume: (token, id, payload) => authRequest(`/api/resumes/${id}`, token, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
   })
 };

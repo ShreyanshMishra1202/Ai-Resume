@@ -7,15 +7,17 @@ import {
   updateResume
 } from '../controllers/resumeController.js';
 import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { resumeSchema, resumeUpdateSchema } from '../validators/resumeValidators.js';
 
 const router = Router();
 
 router.use(requireAuth);
 
 router.get('/', listResumes);
-router.post('/', createResume);
+router.post('/', validate(resumeSchema), createResume);
 router.get('/:id', getResume);
-router.put('/:id', updateResume);
+router.put('/:id', validate(resumeUpdateSchema), updateResume);
 router.delete('/:id', deleteResume);
 
 export default router;

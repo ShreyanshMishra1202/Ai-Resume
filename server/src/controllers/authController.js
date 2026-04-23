@@ -54,3 +54,7 @@ export async function login(req, res, next) {
     next(error);
   }
 }
+
+export async function getMe(req, res) {
+  res.json({ user: req.user });
+}

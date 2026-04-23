@@ -1,7 +1,12 @@
+import { generateWithGemini } from './geminiClient.js';
 import { generateWithOpenAI } from './openaiClient.js';
 
 export async function enhanceResume({ summary, skills }) {
   const provider = process.env.AI_PROVIDER || 'stub';
+
+  if (provider === 'gemini') {
+    return generateWithGemini({ summary, skills });
+  }
 
   if (provider === 'openai') {
     return generateWithOpenAI({ summary, skills });

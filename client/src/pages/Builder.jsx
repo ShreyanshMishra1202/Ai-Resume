@@ -110,12 +110,22 @@ export default function Builder() {
         summary: formData.summary,
         skills: formData.skills
       });
-      setFormData((prev) => ({
-        ...prev,
+      const nextData = {
+        ...formData,
         summary: result.summary,
         skills: result.skills
-      }));
-      setStatus('AI enhancement applied.');
+      };
+      setFormData(nextData);
+      skipAutoSave.current = true;
+      const saved = resumeId
+        ? await api.updateResume(token, resumeId, nextData)
+        : await api.createResume(token, nextData);
+      setResumeId(saved._id);
+      setResumes((prev) => {
+        const filtered = prev.filter((item) => item._id !== saved._id);
+        return [saved, ...filtered].slice(0, 5);
+      });
+      setStatus('AI enhancement applied and saved.');
     } catch (error) {
       setStatus(error.message || 'Enhancement failed.');
     } finally {

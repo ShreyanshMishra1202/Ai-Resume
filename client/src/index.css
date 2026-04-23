@@ -196,6 +196,62 @@ a {
   min-height: 320px;
 }
 
+.resume-preview {
+  background: #fffdf7;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.resume-header {
+  border-bottom: 1px solid var(--stroke);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.resume-header h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+}
+
+.resume-section {
+  margin-bottom: 12px;
+}
+
+.resume-section h4 {
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .nav,
+  .button,
+  .hero-subtitle,
+  .auth-alt {
+    display: none !important;
+  }
+
+  .panel {
+    border: none;
+    padding: 0;
+    min-height: auto;
+  }
+
+  .resume-preview {
+    border: none;
+    padding: 0;
+  }
+}
+
 .form-card {
   background: #fff;
   border-radius: var(--radius-lg);

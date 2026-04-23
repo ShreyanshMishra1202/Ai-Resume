@@ -89,6 +89,10 @@ export default function Builder() {
     }
   };
 
+  const handleExport = () => {
+    window.print();
+  };
+
   if (!token) {
     return (
       <section>
@@ -155,25 +159,35 @@ export default function Builder() {
         <div className="panel">
           <h3>Live Preview</h3>
           <p className="hero-subtitle">{formData.summary || 'Add a summary to preview.'}</p>
-          <div className="card-grid">
-            <div className="card">
-              <strong>{formData.name || 'Your name'}</strong>
-              <p>{formData.email || 'email@example.com'}</p>
-              <p>{formData.phone || 'Phone'}</p>
+          <div className="resume-preview">
+            <div className="resume-header">
+              <h2>{formData.name || 'Your Name'}</h2>
+              <p>{formData.email || 'email@example.com'} • {formData.phone || 'Phone'}</p>
             </div>
-            <div className="card">
-              <strong>Skills</strong>
-              <p>{formData.skills || 'List your skills'}</p>
+            <div className="resume-section">
+              <h4>Summary</h4>
+              <p>{formData.summary || 'Write a concise professional summary.'}</p>
             </div>
-            <div className="card">
-              <strong>Experience</strong>
-              <p>{formData.experience || 'Summarize experience'}</p>
+            <div className="resume-section">
+              <h4>Skills</h4>
+              <p>{formData.skills || 'Add skill keywords.'}</p>
             </div>
-            <div className="card">
-              <strong>Projects</strong>
-              <p>{formData.projects || 'Add key projects'}</p>
+            <div className="resume-section">
+              <h4>Experience</h4>
+              <p>{formData.experience || 'Outline your most impactful experience.'}</p>
+            </div>
+            <div className="resume-section">
+              <h4>Projects</h4>
+              <p>{formData.projects || 'Showcase the projects you are proud of.'}</p>
+            </div>
+            <div className="resume-section">
+              <h4>Education</h4>
+              <p>{formData.education || 'Include your latest education details.'}</p>
             </div>
           </div>
+          <button className="button primary" type="button" onClick={handleExport}>
+            Export PDF
+          </button>
         </div>
       </div>
     </section>

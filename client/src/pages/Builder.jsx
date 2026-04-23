@@ -16,6 +16,154 @@ const EMPTY_FORM = {
   summary: ''
 };
 
+function sanitizeJsonText(content = '') {
+  return content
+    .replace(/```json\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+}
+
+function parseJsonValue(value) {
+  if (typeof value !== 'string') return value;
+
+  const sanitized = sanitizeJsonText(value);
+  if (!sanitized.startsWith('{') && !sanitized.startsWith('[')) {
+    return value;
+  }
+
+  try {
+    return JSON.parse(sanitized);
+  } catch (error) {
+    return value;
+  }
+}
+
+function getSummaryPreview(summary) {
+  const parsed = parseJsonValue(summary);
+
+  if (parsed && typeof parsed === 'object' && typeof parsed.summary === 'string') {
+    return parsed.summary;
+  }
+
+  return typeof parsed === 'string' ? parsed : '';
+}
+
+function normalizeList(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string') {
+    return value
+      .split(/[\n,]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function flattenSectionValue(value) {
+  const parsed = parseJsonValue(value);
+
+  if (typeof parsed === 'string') return parsed.trim();
+  if (Array.isArray(parsed)) {
+    return parsed.map((item) => `${item}`.trim()).filter(Boolean).join('\n');
+  }
+  if (parsed && typeof parsed === 'object') {
+    return Object.entries(parsed)
+      .map(([title, items]) => {
+        const normalizedItems = normalizeList(items);
+        if (normalizedItems.length === 0) return '';
+        return `${title}: ${normalizedItems.join(', ')}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  return '';
+}
+
+function extractSectionsFromText(content = '') {
+  const text = sanitizeJsonText(content);
+  if (!text) {
+    return {
+      summary: '',
+      skills: '',
+      experience: '',
+      projects: '',
+      education: ''
+    };
+  }
+
+  const headings = {
+    summary: ['professional summary', 'summary', 'profile', 'about'],
+    skills: ['technical skills', 'core competencies', 'soft skills', 'languages', 'skills'],
+    experience: ['work experience', 'professional experience', 'experience', 'employment history'],
+    projects: ['projects', 'project experience'],
+    education: ['education', 'academic background', 'qualifications']
+  };
+
+  const headingToKey = new Map();
+  Object.entries(headings).forEach(([key, aliases]) => {
+    aliases.forEach((alias) => headingToKey.set(alias, key));
+  });
+
+  const headingPattern = /^(summary|professional summary|profile|about|skills|technical skills|core competencies|soft skills|languages|experience|work experience|professional experience|employment history|projects|project experience|education|academic background|qualifications)\s*:?\s*$/gim;
+  const matches = [...text.matchAll(headingPattern)];
+
+  if (matches.length === 0) {
+    return {
+      summary: text,
+      skills: '',
+      experience: '',
+      projects: '',
+      education: ''
+    };
+  }
+
+  const extracted = {
+    summary: '',
+    skills: '',
+    experience: '',
+    projects: '',
+    education: ''
+  };
+
+  matches.forEach((match, index) => {
+    const alias = match[1].toLowerCase();
+    const key = headingToKey.get(alias);
+    const start = match.index + match[0].length;
+    const end = index + 1 < matches.length ? matches[index + 1].index : text.length;
+    const block = text.slice(start, end).trim();
+    if (!block || !key) return;
+
+    if (key === 'skills' && extracted.skills) {
+      extracted.skills = `${extracted.skills}\n${alias}: ${block}`.trim();
+      return;
+    }
+
+    extracted[key] = extracted[key] ? `${extracted[key]}\n${block}`.trim() : block;
+  });
+
+  return extracted;
+}
+
+function normalizeAiFields(data) {
+  const parsedSummary = parseJsonValue(data.summary);
+  const structuredSummary = parsedSummary && typeof parsedSummary === 'object' && !Array.isArray(parsedSummary)
+    ? parsedSummary
+    : null;
+  const fallbackSections = structuredSummary
+    ? null
+    : extractSectionsFromText(typeof data.summary === 'string' ? data.summary : '');
+
+  return {
+    ...data,
+    summary: flattenSectionValue(structuredSummary?.summary ?? fallbackSections?.summary ?? data.summary),
+    skills: flattenSectionValue(data.skills || structuredSummary?.skills || fallbackSections?.skills),
+    experience: flattenSectionValue(data.experience || structuredSummary?.experience || fallbackSections?.experience),
+    projects: flattenSectionValue(data.projects || structuredSummary?.projects || fallbackSections?.projects),
+    education: flattenSectionValue(data.education || structuredSummary?.education || fallbackSections?.education)
+  };
+}
+
 export default function Builder() {
   const { token } = useAuth();
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -26,6 +174,7 @@ export default function Builder() {
   const [enhancing, setEnhancing] = useState(false);
   const skipAutoSave = useRef(false);
   const previewRef = useRef(null);
+  const summaryPreview = getSummaryPreview(formData.summary);
 
   useEffect(() => {
     if (!token) return;
@@ -38,7 +187,7 @@ export default function Builder() {
         setResumes(resumes);
         if (resumes.length > 0) {
           setResumeId(resumes[0]._id);
-          setFormData({ ...EMPTY_FORM, ...resumes[0] });
+          setFormData(normalizeAiFields({ ...EMPTY_FORM, ...resumes[0] }));
           skipAutoSave.current = true;
         }
         setStatus('');
@@ -111,13 +260,19 @@ export default function Builder() {
     try {
       const result = await api.enhanceResume(token, {
         summary: formData.summary,
-        skills: formData.skills
+        skills: formData.skills,
+        experience: formData.experience,
+        projects: formData.projects,
+        education: formData.education
       });
-      const nextData = {
+      const nextData = normalizeAiFields({
         ...formData,
         summary: result.summary,
-        skills: result.skills
-      };
+        skills: result.skills,
+        experience: result.experience,
+        projects: result.projects,
+        education: result.education
+      });
       setFormData(nextData);
       skipAutoSave.current = true;
       const saved = resumeId
@@ -138,12 +293,27 @@ export default function Builder() {
 
   const handleExport = useReactToPrint({
     contentRef: previewRef,
-    documentTitle: `${formData.name || 'Resume'}-resume`
+    documentTitle: `${formData.name || 'Resume'}-resume`,
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+
+      @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `
   });
 
   const handleSelectResume = (resume) => {
     setResumeId(resume._id);
-    setFormData({ ...EMPTY_FORM, ...resume });
+    setFormData(normalizeAiFields({ ...EMPTY_FORM, ...resume }));
     setStatus(`Loaded "${resume.name || 'Untitled'}"`);
   };
 
@@ -198,11 +368,11 @@ export default function Builder() {
           </div>
           <div className="form-field">
             <label htmlFor="summary">Summary</label>
-            <input id="summary" name="summary" value={formData.summary} onChange={handleChange} />
+            <textarea id="summary" name="summary" value={formData.summary} onChange={handleChange} rows={5} />
           </div>
           <div className="form-field">
             <label htmlFor="skills">Skills</label>
-            <input id="skills" name="skills" value={formData.skills} onChange={handleChange} />
+            <textarea id="skills" name="skills" value={formData.skills} onChange={handleChange} rows={6} />
           </div>
           <div className="form-field">
             <label htmlFor="experience">Experience</label>
@@ -226,7 +396,7 @@ export default function Builder() {
         </div>
         <div className="panel">
           <h3>Live Preview</h3>
-          <p className="hero-subtitle">{formData.summary || 'Add a summary to preview.'}</p>
+          <p className="hero-subtitle">{summaryPreview || 'Add a summary to preview.'}</p>
           <ResumePreview data={formData} ref={previewRef} />
           <button className="button primary" type="button" onClick={handleExport}>
             Export PDF

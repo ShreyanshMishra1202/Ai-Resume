@@ -210,6 +210,10 @@ a {
   border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 16px;
+  width: min(100%, 794px);
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 12px 32px rgba(38, 32, 25, 0.08);
 }
 
 .resume-list {
@@ -240,6 +244,13 @@ a {
   font-size: 1.4rem;
 }
 
+.resume-header p,
+.resume-section p,
+.resume-skill-group ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .resume-section {
   margin-bottom: 12px;
 }
@@ -250,6 +261,30 @@ a {
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--muted);
+}
+
+.resume-skill-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.resume-skill-group {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.resume-skill-group h5 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.resume-skill-group ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.resume-skill-group li + li {
+  margin-top: 4px;
 }
 
 @media print {
@@ -268,11 +303,19 @@ a {
     border: none;
     padding: 0;
     min-height: auto;
+    background: transparent;
+    box-shadow: none;
   }
 
   .resume-preview {
-    border: none;
-    padding: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 20px;
+    border: 1px solid var(--stroke);
+    border-radius: 18px;
+    background: #fffdf7;
+    box-shadow: none;
   }
 }
 
@@ -293,14 +336,18 @@ a {
   margin-bottom: 18px;
 }
 
-.form-field input {
+.form-field input,
+.form-field textarea {
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--stroke);
   font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
 }
 
-.form-field input:focus {
+.form-field input:focus,
+.form-field textarea:focus {
   outline: 2px solid rgba(27, 154, 170, 0.25);
   border-color: var(--accent);
 }

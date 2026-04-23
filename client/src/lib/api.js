@@ -1,17 +1,29 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ai-resume-zved.onrender.com';
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  } catch (error) {
+    throw new Error('Unable to reach the backend server.');
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || 'Request failed');
+    const rawText = await response.text();
+
+    try {
+      const error = JSON.parse(rawText);
+      throw new Error(error.message || 'Request failed');
+    } catch (parseError) {
+      throw new Error(rawText || 'Request failed');
+    }
   }
 
   return response.json();

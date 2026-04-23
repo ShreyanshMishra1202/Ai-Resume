@@ -176,6 +176,11 @@ export default function Builder() {
   const previewRef = useRef(null);
   const summaryPreview = getSummaryPreview(formData.summary);
 
+  function hasMeaningfulChange(previousData, nextData) {
+    return ['summary', 'skills', 'experience', 'projects', 'education']
+      .some((key) => (previousData[key] || '').trim() !== (nextData[key] || '').trim());
+  }
+
   useEffect(() => {
     if (!token) return;
 
@@ -283,7 +288,13 @@ export default function Builder() {
         const filtered = prev.filter((item) => item._id !== saved._id);
         return [saved, ...filtered].slice(0, 5);
       });
-      setStatus('AI enhancement applied and saved.');
+      if (result._meta?.fallbackUsed) {
+        setStatus(`Enhancement completed with local fallback: ${result._meta.reason}`);
+      } else if (hasMeaningfulChange(formData, nextData)) {
+        setStatus('AI enhancement applied and saved.');
+      } else {
+        setStatus('Enhancement finished, but no visible content changes were returned.');
+      }
     } catch (error) {
       setStatus(error.message || 'Enhancement failed.');
     } finally {

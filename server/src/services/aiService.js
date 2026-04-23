@@ -1,30 +1,52 @@
 import { generateWithGemini } from './geminiClient.js';
 import { generateWithOpenAI } from './openaiClient.js';
 
+function normalizeText(value) {
+  return typeof value === 'string'
+    ? value.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+    : '';
+}
+
+function localEnhance({ summary, skills, experience, projects, education }, reason = '') {
+  const cleanedSummary = normalizeText(summary);
+  const cleanedSkills = normalizeText(skills);
+  const cleanedExperience = normalizeText(experience);
+  const cleanedProjects = normalizeText(projects);
+  const cleanedEducation = normalizeText(education);
+
+  return {
+    summary: cleanedSummary || 'Add your professional background here.',
+    skills: cleanedSkills,
+    experience: cleanedExperience,
+    projects: cleanedProjects,
+    education: cleanedEducation,
+    _meta: {
+      fallbackUsed: true,
+      reason
+    }
+  };
+}
+
 export async function enhanceResume({ summary, skills, experience, projects, education }) {
   const provider = process.env.AI_PROVIDER || 'stub';
 
-  if (provider === 'gemini') {
-    return generateWithGemini({ summary, skills, experience, projects, education });
+  try {
+    if (provider === 'gemini') {
+      return await generateWithGemini({ summary, skills, experience, projects, education });
+    }
+
+    if (provider === 'openai') {
+      return await generateWithOpenAI({ summary, skills, experience, projects, education });
+    }
+  } catch (error) {
+    return localEnhance(
+      { summary, skills, experience, projects, education },
+      error.message || 'AI provider request failed'
+    );
   }
 
-  if (provider === 'openai') {
-    return generateWithOpenAI({ summary, skills, experience, projects, education });
-  }
-
-  const enhancedSummary = summary?.trim()
-    ? `${summary.trim()} (enhanced)`
-    : 'Professional summary enhanced by AI.';
-
-  const enhancedSkills = skills?.trim()
-    ? `${skills.trim()}, AI-optimized`
-    : 'AI-optimized skills';
-
-  return {
-    summary: enhancedSummary,
-    skills: enhancedSkills,
-    experience: experience?.trim() || '',
-    projects: projects?.trim() || '',
-    education: education?.trim() || ''
-  };
+  return localEnhance(
+    { summary, skills, experience, projects, education },
+    'AI provider is set to stub mode'
+  );
 }
